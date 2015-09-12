@@ -25,7 +25,6 @@ defmodule Mix.RemoteConverger do
   """
   defcallback deps(Mix.Dep.t, map) :: [atom]
 
-
   @doc """
   Get registered remote converger.
   """

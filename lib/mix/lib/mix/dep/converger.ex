@@ -60,8 +60,7 @@ defmodule Mix.Dep.Converger do
 
     {deps, rest, lock} =
       all(main, [], [], apps, callback, acc, lock, fn dep ->
-        if (converger = Mix.RemoteConverger.get) &&
-           converger.remote?(dep) do
+        if (remote = Mix.RemoteConverger.get) && remote.remote?(dep) do
           {:loaded, dep}
         else
           {:unloaded, dep, nil}
@@ -70,21 +69,21 @@ defmodule Mix.Dep.Converger do
 
     # Run remote converger if one is available and rerun mix's
     # converger with the new information
-    if converger = Mix.RemoteConverger.get do
+    if remote = Mix.RemoteConverger.get do
       # If there is a lock, it means we are doing a get/update
       # and we need to hit the remote converger which do external
       # requests and what not. In case of deps.check, deps and so
       # on, there is no lock, so we won't hit this branch.
       if lock do
-        lock = converger.converge(deps, lock)
+        lock = remote.converge(deps, lock)
       end
 
       deps = deps
-             |> Enum.reject(&converger.remote?(&1))
+             |> Enum.reject(&remote.remote?(&1))
              |> Enum.into(HashDict.new, &{&1.app, &1})
 
       # In case there is no lock, we will read the current lock
-      # which is potentially stale. So converger.deps/2 needs to
+      # which is potentially stale. So remote.deps/2 needs to
       # always check if the data it finds in the lock is actually
       # valid.
       lock_for_converger = lock || Mix.Dep.Lock.read
@@ -94,7 +93,7 @@ defmodule Mix.Dep.Converger do
           cached = deps[dep.app] ->
             {:loaded, cached}
           true ->
-            {:unloaded, dep, converger.deps(dep, lock_for_converger)}
+            {:unloaded, dep, remote.deps(dep, lock_for_converger)}
         end
       end)
     else
@@ -204,13 +203,12 @@ defmodule Mix.Dep.Converger do
   end
 
   defp converge?(%Mix.Dep{scm: scm1, opts: opts1}, %Mix.Dep{scm: scm2, opts: opts2}) do
-    scm1 == scm2 and mix_equal?(opts1, opts2) and scm1.equal?(opts1, opts2)
+    scm1 == scm2 and opts_equal?(opts1, opts2) and scm1.equal?(opts1, opts2)
   end
 
-  defp mix_equal?(opts1, opts2) do
-    Keyword.fetch(opts1, :app) == Keyword.fetch(opts2, :app) and
-      Keyword.fetch(opts1, :env) == Keyword.fetch(opts2, :env) and
-      Keyword.fetch(opts1, :compile) == Keyword.fetch(opts2, :compile)
+  defp opts_equal?(opts1, opts2) do
+    keys = ~w(app env compile manager)a
+    Enum.all?(keys, &(Keyword.fetch(opts1, &1) == Keyword.fetch(opts2, &1)))
   end
 
   defp reject_non_fullfilled_optional(children, upper_breadths) do

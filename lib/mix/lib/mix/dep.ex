@@ -22,7 +22,7 @@ defmodule Mix.Dep do
     * `top_level` - true if dependency was defined in the top-level project
 
     * `manager` - the project management, possible values:
-      `:rebar` | `:mix` | `:make` | `nil`
+      `:rebar` | `:rebar3` | `:mix` | `:make` | `nil`
 
     * `from` - path to the file where the dependency was defined
 
@@ -56,7 +56,7 @@ defmodule Mix.Dep do
                status: atom,
                opts: Keyword.t,
                top_level: boolean,
-               manager: :rebar | :mix | :make | nil,
+               manager: :rebar | :rebar3 | :mix | :make | nil,
                from: String.t,
                extra: term}
 
@@ -311,7 +311,7 @@ defmodule Mix.Dep do
   Return `true` if dependency is a rebar project.
   """
   def rebar?(%Mix.Dep{manager: manager}) do
-    manager == :rebar
+    manager in [:rebar, :rebar3]
   end
 
   @doc """

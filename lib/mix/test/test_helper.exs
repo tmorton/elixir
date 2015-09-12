@@ -135,10 +135,14 @@ System.put_env("MIX_HOME", home)
 
 ## Copy fixtures to tmp
 
-source = MixTest.Case.fixture_path("rebar_dep")
-dest = MixTest.Case.tmp_path("rebar_dep")
-File.mkdir_p!(dest)
-File.cp_r!(source, dest)
+fixtures = ~w(rebar_dep rebar_override)
+
+Enum.each(fixtures, fn fixture ->
+  source = MixTest.Case.fixture_path(fixture)
+  dest = MixTest.Case.tmp_path(fixture)
+  File.mkdir_p!(dest)
+  File.cp_r!(source, dest)
+end)
 
 ## Generate git repo fixtures
 
